@@ -128,7 +128,7 @@ contract Vacancy {
     
     // Qualquer um pode chamar pois há mecanismos
     // que só aceita se o tempo estiver correto
-    function closeApplicationPhase() public 
+    function closeRegistering() public 
                         inPhase(Phase.Applicant) {
         require(now > registrationTime, "The registration period ins't over yet.");
         state = Phase.Reviewer;
@@ -161,7 +161,6 @@ contract Vacancy {
         // caso o reviewer queira alterar a nota
         if (reviewGrade.phase != uint(reviewPhase)) {
             appl.reviewers++;
-            appl.sum = 0;
             reviewGrade.phase = uint(reviewPhase);
         } else {
             if (reviewGrade.grade > 0)
@@ -195,7 +194,10 @@ contract Vacancy {
                                 inPhase(Phase.Reviewer) 
                                 admin {
         require(reviewPhase != ReviewPhase.Finish, "There isn't any more review phase");
-        for (uint i = 0; i < applicantsIndices.length; i++) {
+        uint weight = 1; // Os pesos são por padrão peso 1, caso não tenha sido enviado os pesos
+        if((uint(reviewPhase) - 2) < weights.length)
+            weight = weights[uint(reviewPhase) - 2];
+		for (uint i = 0; i < applicantsIndices.length; i++) {
             Structs.Applicant storage applicant = applicants[applicantsIndices[i]];
             if(applicant.disqualified)
                 continue;
@@ -203,9 +205,6 @@ contract Vacancy {
             if(applicant.reviewers > 0)
                 rev = applicant.reviewers;
             uint result = applicant.sum / rev;
-            uint weight = 1; // Os pesos são por padrão peso 1, caso não tenha sido enviado os pesos
-            if((uint(reviewPhase) - 2) < weights.length)
-                weight = weights[uint(reviewPhase) - 2];
             // Aqui começa a formar a nota do applicant
             applicant.finalGrade += weight * result;
             if(result == 0 || (reviewPhase == ReviewPhase.WrittenExam && result < 70))
@@ -229,7 +228,7 @@ contract Vacancy {
     
     // Qualquer um pode chamar pois há mecanismos
     // que só aceita se o tempo estiver correto
-    function closeReviewPhase() public 
+    function closeVacancy() public 
                         inPhase(Phase.Reviewer) {
         require(now > reviewTime, "The review period ins't over yet."); //TODO alterar deadline de review
         require(reviewPhase == ReviewPhase.Finish, "There are some review phases yet.");
